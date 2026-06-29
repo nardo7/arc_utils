@@ -1,0 +1,28 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "arc-utils"
+version = "0.1.0"
+description = "Reusable utilities for working with ARC-AGI data in this thesis workspace."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Proprietary" }
+authors = [
+  { name = "Aleja" }
+]
+dependencies = [
+  "pydantic>=2.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.2",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/arc_utils"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
