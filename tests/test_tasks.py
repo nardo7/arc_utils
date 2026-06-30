@@ -3,7 +3,7 @@ from arc_utils import (
     available_task_ids,
     get_different_output_pixels,
     get_tasks_smaller_than,
-    get_tasks_with_max_colors,
+    get_tasks_outputs_with_max_colors,
     load_task,
     load_tasks,
     task_path,
@@ -43,7 +43,7 @@ def test_notebook_filters_can_select_tasks() -> None:
     tasks = load_tasks(split="evaluation")
 
     smaller_than_eight = get_tasks_smaller_than(tasks, 8)
-    max_four_colors = get_tasks_with_max_colors(smaller_than_eight, 4)
+    max_four_colors = get_tasks_outputs_with_max_colors(smaller_than_eight, 4)
 
     assert smaller_than_eight
     assert max_four_colors

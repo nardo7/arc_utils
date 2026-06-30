@@ -15,7 +15,7 @@ def grid_area(grid: list[list[int]]) -> int:
 
 
 def color_count(grid: list[list[int]]) -> int:
-    return len({color for row in grid for color in row})
+    return len({color for row in grid for color in row if color > 0})
 
 
 def non_zero_pixel_count(grid: list[list[int]]) -> int:
@@ -66,15 +66,16 @@ def get_tasks_smaller_than(tasks: list[Task], max_size: int) -> list[Task]:
     return filtered_tasks
 
 
-def get_tasks_with_max_colors(tasks: list[Task], max_colors: int) -> list[Task]:
+def get_tasks_outputs_with_max_colors(tasks: list[Task], max_colors: int) -> list[Task]:
     filtered_tasks: list[Task] = []
     for task in tasks:
         if all(
-            color_count(pair.input) <= max_colors and color_count(pair.output) <= max_colors
+            color_count(pair.output) <= max_colors
             for pair in task.train + task.test
         ):
             filtered_tasks.append(task)
     return filtered_tasks
+
 
 
 def get_tasks_with_pixel_amount_difference_less_than(

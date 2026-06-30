@@ -3,7 +3,7 @@ from .analysis import (
 	get_non_zero_pixels,
 	get_tasks_smaller_than,
 	get_tasks_with_different_pixels_less_than,
-	get_tasks_with_max_colors,
+	get_tasks_outputs_with_max_colors,
 	get_tasks_with_pixel_amount_difference_less_than,
 	sort_key_by_max_pair_area,
 )
@@ -18,7 +18,7 @@ __all__ = [
 	"get_non_zero_pixels",
 	"get_tasks_smaller_than",
 	"get_tasks_with_different_pixels_less_than",
-	"get_tasks_with_max_colors",
+	"get_tasks_outputs_with_max_colors",
 	"get_tasks_with_pixel_amount_difference_less_than",
 	"load_task",
 	"load_task_from_path",
