@@ -6,8 +6,11 @@ from arc_utils import (
     get_tasks_outputs_with_max_colors,
     load_task,
     load_tasks,
+    sort_key_by_max_pair_area,
     task_path,
 )
+from arc_utils.analysis import filter_max_output_pixels_per_color
+from arc_utils.models import Split, Task
 
 
 def test_task_path_points_to_existing_evaluation_file() -> None:
@@ -47,3 +50,33 @@ def test_notebook_filters_can_select_tasks() -> None:
 
     assert smaller_than_eight
     assert max_four_colors
+
+
+def test_sort_key_uses_largest_grid_area_in_task() -> None:
+    task = Task(
+        task_id="area",
+        train=[GridPair(input=[[0, 0]], output=[[0], [0], [0]])],
+        test=[GridPair(input=[[0]], output=[[0, 0], [0, 0]])],
+        split=Split.TRAIN,
+    )
+
+    assert sort_key_by_max_pair_area(task) == 4
+
+
+def test_filter_max_output_pixels_per_color_requires_every_color_to_fit() -> None:
+    within_limit = Task(
+        task_id="within-limit",
+        train=[GridPair(input=[[0]], output=[[1, 1, 2]])],
+        test=[],
+        split=Split.TRAIN,
+    )
+    over_limit = Task(
+        task_id="over-limit",
+        train=[GridPair(input=[[0]], output=[[1, 1, 1]])],
+        test=[],
+        split=Split.TRAIN,
+    )
+
+    assert filter_max_output_pixels_per_color(
+        [within_limit, over_limit], max_pixels=2
+    ) == [within_limit]

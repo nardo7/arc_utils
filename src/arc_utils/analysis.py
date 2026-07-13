@@ -13,7 +13,6 @@ def grid_area(grid: list[list[int]]) -> int:
     rows, cols = grid_size(grid)
     return rows * cols
 
-
 def color_count(grid: list[list[int]]) -> int:
     return len({color for row in grid for color in row if color > 0})
 
@@ -52,7 +51,18 @@ def sort_key_by_max_pair_area(task: Task) -> int:
     )
 
 
+
 def get_tasks_smaller_than(tasks: list[Task], max_size: int) -> list[Task]:
+    """
+    Filters tasks where all grids have a size smaller than or equal to max_size.
+
+    Args:
+        tasks (list[Task]): The list of tasks to filter.
+        max_size (int): The maximum size allowed for the grids.
+
+    Returns:
+        list[Task]: The filtered list of tasks.
+    """
     filtered_tasks: list[Task] = []
     for task in tasks:
         if all(
@@ -67,6 +77,16 @@ def get_tasks_smaller_than(tasks: list[Task], max_size: int) -> list[Task]:
 
 
 def get_tasks_outputs_with_max_colors(tasks: list[Task], max_colors: int) -> list[Task]:
+    """
+    Filters tasks where all output grids have a number of colors less than or equal to max_colors.
+
+    Args:
+        tasks (list[Task]): The list of tasks to filter.
+        max_colors (int): The maximum number of colors allowed in the output grids.
+
+    Returns:
+        list[Task]: The filtered list of tasks.
+    """
     filtered_tasks: list[Task] = []
     for task in tasks:
         if all(
@@ -76,7 +96,73 @@ def get_tasks_outputs_with_max_colors(tasks: list[Task], max_colors: int) -> lis
             filtered_tasks.append(task)
     return filtered_tasks
 
+def get_tasks_with_max_output_pixels(tasks: list[Task], max_pixels: int) -> list[Task]:
+    """
+    Filters tasks where all output grids have a number of non-zero pixels less than or equal to max_pixels.
+    Args:
+        tasks (list[Task]): The list of tasks to filter.
+        max_pixels (int): The maximum number of non-zero pixels allowed in the output grids.
 
+    Returns:
+        list[Task]: The filtered list of tasks.
+    """
+    filtered_tasks: list[Task] = []
+    for task in tasks:
+        if all(
+            non_zero_pixel_count(pair.output) <= max_pixels
+            for pair in task.train + task.test
+        ):
+            filtered_tasks.append(task)
+    return filtered_tasks
+
+# def get_tasks_with_max_output_pixels_color(tasks: list[Task], max_pixels: int, color: int) -> list[Task]:
+#     """
+#     Filters tasks where all output grids have a number of pixels of a specific color less than or equal to max_pixels.
+#     Args:
+#         tasks (list[Task]): The list of tasks to filter.
+#         max_pixels (int): The maximum number of pixels of the specified color allowed in the output grids.
+#         color (int): The specific color to check in the output grids.   """
+#     filtered_tasks: list[Task] = []
+#     # check max pixels in the outputs for the specified color
+#     for task in tasks:
+#         if all(
+#             sum(1 for row in pair.output for c in row if c == color) <= max_pixels
+#             for pair in task.train + task.test
+#         ):
+#             filtered_tasks.append(task)
+#     return filtered_tasks
+
+def filter_max_output_pixels_per_color(tasks: list[Task], max_pixels: int) -> list[Task]:
+    """
+    Filters tasks where all output grids have a number of pixels of each color less than or equal to max_pixels.
+    Args:
+        tasks (list[Task]): The list of tasks to filter.
+        max_pixels (int): The maximum number of pixels of each color allowed in the output grids.
+
+    Returns:
+        list[Task]: The filtered list of tasks.
+    """
+    filtered_tasks: list[Task] = []
+    for task in tasks:
+        if all(
+            sum(1 for row in pair.output for cell in row if cell == color)
+            <= max_pixels
+            for pair in task.train + task.test
+            for color in range(1, 10)
+        ):
+            filtered_tasks.append(task)
+    return filtered_tasks
+
+def sort_by_amount_of_output_pixels(tasks: list[Task]) -> list[Task]:
+    """
+    Sorts tasks by the total number of non-zero pixels in their output grids.
+    """
+    return sorted(
+        tasks,
+        key=lambda task: max(
+            non_zero_pixel_count(pair.output) for pair in task.train + task.test
+        ),
+    )
 
 def get_tasks_with_pixel_amount_difference_less_than(
     tasks: list[Task], max_difference: int
