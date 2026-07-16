@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from arc_utils.models import GridPair, Task
+from arc_utils.models import GridPair, Split, Task
+from arc_utils.tasks import load_tasks
 
 
 def grid_size(grid: list[list[int]]) -> tuple[int, int]:
@@ -12,6 +13,7 @@ def grid_size(grid: list[list[int]]) -> tuple[int, int]:
 def grid_area(grid: list[list[int]]) -> int:
     rows, cols = grid_size(grid)
     return rows * cols
+
 
 def color_count(grid: list[list[int]]) -> int:
     return len({color for row in grid for color in row if color > 0})
@@ -45,11 +47,7 @@ def get_different_output_pixels(pair: GridPair) -> list[tuple[int, int, int, int
 
 
 def sort_key_by_max_pair_area(task: Task) -> int:
-    return max(
-        max(grid_area(pair.input), grid_area(pair.output))
-        for pair in task.train + task.test
-    )
-
+    return max(max(grid_area(pair.input), grid_area(pair.output)) for pair in task.train + task.test)
 
 
 def get_tasks_smaller_than(tasks: list[Task], max_size: int) -> list[Task]:
@@ -89,12 +87,10 @@ def get_tasks_outputs_with_max_colors(tasks: list[Task], max_colors: int) -> lis
     """
     filtered_tasks: list[Task] = []
     for task in tasks:
-        if all(
-            color_count(pair.output) <= max_colors
-            for pair in task.train + task.test
-        ):
+        if all(color_count(pair.output) <= max_colors for pair in task.train + task.test):
             filtered_tasks.append(task)
     return filtered_tasks
+
 
 def get_tasks_with_max_output_pixels(tasks: list[Task], max_pixels: int) -> list[Task]:
     """
@@ -108,12 +104,10 @@ def get_tasks_with_max_output_pixels(tasks: list[Task], max_pixels: int) -> list
     """
     filtered_tasks: list[Task] = []
     for task in tasks:
-        if all(
-            non_zero_pixel_count(pair.output) <= max_pixels
-            for pair in task.train + task.test
-        ):
+        if all(non_zero_pixel_count(pair.output) <= max_pixels for pair in task.train + task.test):
             filtered_tasks.append(task)
     return filtered_tasks
+
 
 # def get_tasks_with_max_output_pixels_color(tasks: list[Task], max_pixels: int, color: int) -> list[Task]:
 #     """
@@ -132,6 +126,7 @@ def get_tasks_with_max_output_pixels(tasks: list[Task], max_pixels: int) -> list
 #             filtered_tasks.append(task)
 #     return filtered_tasks
 
+
 def filter_max_output_pixels_per_color(tasks: list[Task], max_pixels: int) -> list[Task]:
     """
     Filters tasks where all output grids have a number of pixels of each color less than or equal to max_pixels.
@@ -145,13 +140,13 @@ def filter_max_output_pixels_per_color(tasks: list[Task], max_pixels: int) -> li
     filtered_tasks: list[Task] = []
     for task in tasks:
         if all(
-            sum(1 for row in pair.output for cell in row if cell == color)
-            <= max_pixels
+            sum(1 for row in pair.output for cell in row if cell == color) <= max_pixels
             for pair in task.train + task.test
             for color in range(1, 10)
         ):
             filtered_tasks.append(task)
     return filtered_tasks
+
 
 def sort_by_amount_of_output_pixels(tasks: list[Task]) -> list[Task]:
     """
@@ -159,37 +154,25 @@ def sort_by_amount_of_output_pixels(tasks: list[Task]) -> list[Task]:
     """
     return sorted(
         tasks,
-        key=lambda task: max(
-            non_zero_pixel_count(pair.output) for pair in task.train + task.test
-        ),
+        key=lambda task: max(non_zero_pixel_count(pair.output) for pair in task.train + task.test),
     )
 
-def get_tasks_with_pixel_amount_difference_less_than(
-    tasks: list[Task], max_difference: int
-) -> list[Task]:
+
+def get_tasks_with_pixel_amount_difference_less_than(tasks: list[Task], max_difference: int) -> list[Task]:
     filtered_tasks: list[Task] = []
     for task in tasks:
-        amount_pixels_input = [
-            non_zero_pixel_count(pair.input) for pair in task.train + task.test
-        ]
-        amount_pixels_output = [
-            non_zero_pixel_count(pair.output) for pair in task.train + task.test
-        ]
+        amount_pixels_input = [non_zero_pixel_count(pair.input) for pair in task.train + task.test]
+        amount_pixels_output = [non_zero_pixel_count(pair.output) for pair in task.train + task.test]
 
         if all(
-            input_pixels >= output_pixels
-            or abs(input_pixels - output_pixels) <= max_difference
-            for input_pixels, output_pixels in zip(
-                amount_pixels_input, amount_pixels_output, strict=False
-            )
+            input_pixels >= output_pixels or abs(input_pixels - output_pixels) <= max_difference
+            for input_pixels, output_pixels in zip(amount_pixels_input, amount_pixels_output, strict=False)
         ):
             filtered_tasks.append(task)
     return filtered_tasks
 
 
-def get_tasks_with_different_pixels_less_than(
-    tasks: list[Task], max_difference: int
-) -> list[Task]:
+def get_tasks_with_different_pixels_less_than(tasks: list[Task], max_difference: int) -> list[Task]:
     filtered_tasks: list[Task] = []
     for task in tasks:
         keep_task = True
@@ -206,3 +189,16 @@ def get_tasks_with_different_pixels_less_than(
         if keep_task:
             filtered_tasks.append(task)
     return filtered_tasks
+
+
+def get_era_bench_tasks() -> list[Task]:
+    training_tasks = load_tasks(split=Split.TRAIN)
+    evaluation_tasks = load_tasks(split=Split.EVALUATION)
+    tasks = training_tasks + evaluation_tasks
+    tasks = get_tasks_smaller_than(tasks, max_size=8)
+    tasks = get_tasks_outputs_with_max_colors(tasks, 4)
+    tasks = filter_max_output_pixels_per_color(tasks, 12)
+    filtered_tasks = ["e872b94a"]
+    tasks = [task for task in tasks if task.task_id not in filtered_tasks]
+
+    return tasks

@@ -21,6 +21,11 @@ def package_root() -> Path:
 
 
 def data_root() -> Path:
+    # In a source checkout, data is next to ``src``. Hatch places the same
+    # directory inside ``arc_utils`` when building an installed wheel.
+    packaged_data = Path(__file__).resolve().parent / "data"
+    if packaged_data.is_dir():
+        return packaged_data
     return package_root() / "data"
 
 

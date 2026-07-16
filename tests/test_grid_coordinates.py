@@ -1,176 +1,109 @@
 import pytest
+
 from arc_utils import GridPair
 
 
-def test_to_continuous_coordinates_maps_input_grid_to_expected_positions() -> None:
+def test_to_continuous_coordinates_maps_input_grid_to_centered_positions() -> None:
     pair = GridPair(input=[[1, 2], [3, 4]], output=[[0, 0], [0, 0]])
 
-    objects = pair.to_continuous_coordinates(
-        min_x=0,
-        min_y=0,
-        max_x=5,
-        max_y=5,
-        object_size=(2, 2),
-        min_separation=1,
-    )
+    objects = pair.to_continuous_coordinates(object_size=2.0, min_separation=1.0)
 
     assert [(obj.color, obj.x, obj.y) for obj in objects] == [
-        (1, 0, 0),
-        (2, 0, 3),
-        (3, 3, 0),
-        (4, 3, 3),
+        (1, -2.5, -2.5),
+        (2, -2.5, 0.5),
+        (3, 0.5, -2.5),
+        (4, 0.5, 0.5),
     ]
-    assert all(obj.width == 2 and obj.height == 2 for obj in objects)
-
+    assert all(obj.width == 2.0 and obj.height == 2.0 for obj in objects)
 
 
 def test_to_continuous_coordinates_skips_background_zeros() -> None:
     pair = GridPair(input=[[0, 1], [0, 0]], output=[[0, 0], [0, 0]])
 
-    objects = pair.to_continuous_coordinates(
-        min_x=0,
-        min_y=0,
-        max_x=3,
-        max_y=3,
-        object_size=(1, 1),
-        min_separation=1,
-    )
+    objects = pair.to_continuous_coordinates(object_size=1.0, min_separation=1.0)
 
     assert len(objects) == 1
     assert objects[0].color == 1
+    assert objects[0].x == -1.5
+    assert objects[0].y == 0.5
 
 
 def test_to_continuous_coordinates_can_use_output_grid() -> None:
     pair = GridPair(input=[[1, 1]], output=[[7, 8]])
 
     objects = pair.to_continuous_coordinates(
-        min_x=0,
-        min_y=0,
-        max_x=1,
-        max_y=3,
-        object_size=(1, 1),
-        min_separation=1,
+        object_size=1.0,
+        min_separation=1.0,
         grid="output",
     )
 
-    assert [(obj.color, obj.x, obj.y) for obj in objects] == [(7, 0, 0), (8, 0, 2)]
+    assert [(obj.color, obj.x, obj.y) for obj in objects] == [
+        (7, -0.5, -1.5),
+        (8, -0.5, 0.5),
+    ]
 
 
-def test_to_continuous_coordinates_raises_when_grid_does_not_fit() -> None:
-    pair = GridPair(input=[[1, 2]], output=[[0, 0]])
+def test_to_continuous_coordinates_handles_1x1_grid() -> None:
+    pair = GridPair(input=[[9]], output=[[0]])
 
-    with pytest.raises(ValueError, match="fit vertically"):
+    objects = pair.to_continuous_coordinates(object_size=0.4, min_separation=0.2)
+
+    assert len(objects) == 1
+    assert objects[0].color == 9
+    assert objects[0].x == pytest.approx(-0.2)
+    assert objects[0].y == pytest.approx(-0.2)
+    assert objects[0].width == pytest.approx(0.4)
+    assert objects[0].height == pytest.approx(0.4)
+
+
+def test_to_continuous_coordinates_handles_8x8_grid_edges_and_spacing() -> None:
+    grid = [[0] * 8 for _ in range(8)]
+    grid[0][0] = 1
+    grid[0][7] = 2
+    grid[7][0] = 3
+    grid[7][7] = 4
+    pair = GridPair(input=grid, output=[[0] * 8 for _ in range(8)])
+
+    objects = pair.to_continuous_coordinates(object_size=0.05, min_separation=0.05)
+
+    assert [(obj.color, obj.x, obj.y) for obj in objects] == [
+        (1, pytest.approx(-0.375), pytest.approx(-0.375)),
+        (2, pytest.approx(-0.375), pytest.approx(0.325)),
+        (3, pytest.approx(0.325), pytest.approx(-0.375)),
+        (4, pytest.approx(0.325), pytest.approx(0.325)),
+    ]
+    assert all(obj.width == pytest.approx(0.05) for obj in objects)
+    assert all(obj.height == pytest.approx(0.05) for obj in objects)
+
+
+@pytest.mark.parametrize(
+    ("object_size", "min_separation", "message"),
+    [
+        (0.0, 0.0, "Object size must be positive"),
+        (-1.0, 0.0, "Object size must be positive"),
+        (1.0, -0.1, "Minimum separation must be non-negative"),
+    ],
+)
+def test_to_continuous_coordinates_rejects_invalid_layout_parameters(
+    object_size: float,
+    min_separation: float,
+    message: str,
+) -> None:
+    pair = GridPair(input=[[1]], output=[[0]])
+
+    with pytest.raises(ValueError, match=message):
         pair.to_continuous_coordinates(
-            min_x=0,
-            min_y=0,
-            max_x=2,
-            max_y=1,
-            object_size=(1, 1),
-            min_separation=1,
+            object_size=object_size,
+            min_separation=min_separation,
         )
 
 
-def test_to_continuous_coordinates_raises_for_invalid_grid_selector() -> None:
+def test_to_continuous_coordinates_rejects_invalid_grid_selector() -> None:
     pair = GridPair(input=[[1]], output=[[2]])
 
     with pytest.raises(ValueError, match="grid must be either"):
         pair.to_continuous_coordinates(
-            min_x=0,
-            min_y=0,
-            max_x=1,
-            max_y=1,
-            object_size=(1, 1),
-            min_separation=0,
-            grid="foo",
-        )
-
-
-PLANE = dict(min_x=10.0, min_y=20.0, max_x=16.0, max_y=26.0, object_size=(2.0, 2.0), min_separation=1.0)
-
-
-def test_from_continuous_coordinates_round_trip_for_output_grid() -> None:
-    original = GridPair(input=[[0, 0], [0, 0]], output=[[9, 8], [7, 6]])
-
-    objects = original.to_continuous_coordinates(**PLANE, grid="output")
-
-    reconstructed = GridPair.from_continuous_coordinates(
-        objects=objects,
-        grid_size=(2, 2),
-        **PLANE,
-        grid="output",
-    )
-
-    assert reconstructed.output == [[9, 8], [7, 6]]
-
-
-def test_from_continuous_coordinates_round_trip_with_sparse_grid() -> None:
-    original = GridPair(input=[[0, 0], [0, 0]], output=[[0, 3], [0, 0]])
-
-    objects = original.to_continuous_coordinates(**PLANE, grid="output")
-
-    assert len(objects) == 1
-
-    reconstructed = GridPair.from_continuous_coordinates(
-        objects=objects,
-        grid_size=(2, 2),
-        **PLANE,
-        grid="output",
-    )
-
-    assert reconstructed.output == [[0, 3], [0, 0]]
-
-
-def test_8x8_grid_fits_exactly_and_round_trips() -> None:
-    # 8 cells × 0.05 + 7 gaps × 0.05 = 0.75 → zero margins, step = 0.10
-    plane_8x8 = dict(min_x=0.0, min_y=0.0, max_x=0.75, max_y=0.75, object_size=(0.05, 0.05), min_separation=0.05)
-
-    grid = [
-        [1, 0, 0, 0, 0, 0, 0, 2],
-        [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 3, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 4, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0],
-        [5, 0, 0, 0, 0, 0, 0, 6],
-    ]
-    pair = GridPair(input=[[0] * 8 for _ in range(8)], output=grid)
-
-    objects = pair.to_continuous_coordinates(**plane_8x8, grid="output")
-
-    assert len(objects) == 6
-    assert pytest.approx(objects[0].x) == 0.00   # row 0
-    assert pytest.approx(objects[0].y) == 0.00   # col 0
-    assert pytest.approx(objects[1].x) == 0.00   # row 0
-    assert pytest.approx(objects[1].y) == 0.70   # col 7
-    assert pytest.approx(objects[2].x) == 0.20   # row 2
-    assert pytest.approx(objects[2].y) == 0.20   # col 2
-    assert pytest.approx(objects[3].x) == 0.50   # row 5
-    assert pytest.approx(objects[3].y) == 0.50   # col 5
-    assert pytest.approx(objects[4].x) == 0.70   # row 7
-    assert pytest.approx(objects[4].y) == 0.00   # col 0
-    assert pytest.approx(objects[5].x) == 0.70   # row 7
-    assert pytest.approx(objects[5].y) == 0.70   # col 7
-
-    reconstructed = GridPair.from_continuous_coordinates(
-        objects=objects,
-        grid_size=(8, 8),
-        **plane_8x8,
-        grid="output",
-    )
-    assert reconstructed.output == grid
-
-
-def test_from_continuous_coordinates_raises_for_invalid_grid_selector() -> None:
-    pair = GridPair(input=[[5]], output=[[0]])
-    objects = pair.to_continuous_coordinates(
-        min_x=0, min_y=0, max_x=1, max_y=1, object_size=(1, 1), min_separation=0
-    )
-
-    with pytest.raises(ValueError, match="grid must be either"):
-        GridPair.from_continuous_coordinates(
-            objects=objects,
-            grid_size=(1, 1),
-            min_x=0, min_y=0, max_x=1, max_y=1, object_size=(1, 1), min_separation=0,
+            object_size=1.0,
+            min_separation=0.0,
             grid="foo",
         )

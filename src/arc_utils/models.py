@@ -3,9 +3,13 @@ from enum import Enum
 
 from pydantic import BaseModel, field_validator
 
+from .colors import ARC_COLOR_TO_COLOR
+
+
 class Split(Enum):
     TRAIN = "training"
     EVALUATION = "evaluation"
+
 
 class GridPair(BaseModel):
     input: list[list[int]]
@@ -15,75 +19,16 @@ class GridPair(BaseModel):
         def format_grid(grid: list[list[int]]) -> str:
             return "\n".join(" ".join(str(cell) for cell in row) for row in grid)
 
-        return (
-            "GridPair(\n"
-            f"input:\n{format_grid(self.input)}\n"
-            f"output:\n{format_grid(self.output)}\n"
-            ")"
-        )
-
-
-    @staticmethod
-    def from_continuous_coordinates(
-        objects: list[Object],
-        grid_size: tuple[int, int],
-        min_x: float,
-        min_y: float,
-        max_x: float,
-        max_y: float,
-        object_size: tuple[float, float],
-        min_separation: float,
-        grid: str = "output",
-    ) -> GridPair:
-        rows, cols = grid_size
-        if rows <= 0 or cols <= 0:
-            raise ValueError("grid_size must contain positive row and column counts.")
-        if grid not in {"input", "output"}:
-            raise ValueError("grid must be either 'input' or 'output'.")
-
-        object_width, object_height = object_size
-        plane_width = max_x - min_x
-        plane_height = max_y - min_y
-        required_width = rows * object_width + (rows - 1) * min_separation
-        required_height = cols * object_height + (cols - 1) * min_separation
-        x0 = min_x + (plane_width - required_width) / 2
-        y0 = min_y + (plane_height - required_height) / 2
-        step_x = object_width + min_separation
-        step_y = object_height + min_separation
-
-        reconstructed_grid = [[0] * cols for _ in range(rows)]
-        for obj in objects:
-            row_index = round((obj.x - x0) / step_x)
-            col_index = round((obj.y - y0) / step_y)
-            if not (0 <= row_index < rows and 0 <= col_index < cols):
-                raise ValueError(
-                    f"Object at ({obj.x}, {obj.y}) maps outside the grid bounds."
-                )
-            reconstructed_grid[row_index][col_index] = obj.color
-
-        zero_grid = [[0] * cols for _ in range(rows)]
-        if grid == "input":
-            return GridPair(input=reconstructed_grid, output=zero_grid)
-        return GridPair(input=zero_grid, output=reconstructed_grid)
+        return "GridPair(\n" f"input:\n{format_grid(self.input)}\n" f"output:\n{format_grid(self.output)}\n" ")"
 
     def to_continuous_coordinates(
         self,
-        min_x: float,
-        min_y: float,
-        max_x: float,
-        max_y: float,
-        object_size: tuple[float, float],
+        object_size: float,
         min_separation: float,
         grid: str = "input",
-    ) -> list[Object]:
-        if min_x >= max_x:
-            raise ValueError("Expected min_x < max_x.")
-        if min_y >= max_y:
-            raise ValueError("Expected min_y < max_y.")
-
-        object_width, object_height = object_size
-        if object_width <= 0 or object_height <= 0:
-            raise ValueError("Object width and height must be positive.")
+    ) -> list[Pixel]:
+        if object_size <= 0:
+            raise ValueError("Object size must be positive.")
         if min_separation < 0:
             raise ValueError("Minimum separation must be non-negative.")
 
@@ -97,33 +42,20 @@ class GridPair(BaseModel):
         row_count = len(grid_data)
         col_count = len(grid_data[0])
 
-        plane_width = max_x - min_x
-        plane_height = max_y - min_y
+        plane_width = row_count * object_size + (row_count - 1) * min_separation
+        plane_height = col_count * object_size + (col_count - 1) * min_separation
+        object_width, object_height = object_size, object_size
+        center = (0.0, 0.0)
+        min_x = center[0] - plane_width / 2
+        min_y = center[1] - plane_height / 2
 
-        required_width = row_count * object_width + (row_count - 1) * min_separation
-        required_height = col_count * object_height + (col_count - 1) * min_separation
-
-        if required_width > plane_width:
-            raise ValueError(
-                "Grid does not fit horizontally in the provided bounds with the given "
-                "object size and minimum separation."
-            )
-        if required_height > plane_height:
-            raise ValueError(
-                "Grid does not fit vertically in the provided bounds with the given "
-                "object size and minimum separation."
-            )
-
-        horizontal_margin = (plane_width - required_width) / 2
-        vertical_margin = (plane_height - required_height) / 2
-
-        x0 = min_x + horizontal_margin
-        y0 = min_y + vertical_margin
+        x0 = min_x
+        y0 = min_y
 
         step_x = object_width + min_separation
         step_y = object_height + min_separation
 
-        objects: list[Object] = []
+        objects: list[Pixel] = []
         for row_index, row in enumerate(grid_data):
             for col_index, color in enumerate(row):
                 if color == 0:
@@ -131,7 +63,7 @@ class GridPair(BaseModel):
                 x = x0 + row_index * step_x
                 y = y0 + col_index * step_y
                 objects.append(
-                    Object(
+                    Pixel(
                         color=color,
                         x=x,
                         y=y,
@@ -154,7 +86,7 @@ class GridPair(BaseModel):
                 if not isinstance(color, int) or color < 0:
                     raise ValueError("All colors in the input grid must be non-negative integers.")
         return value
-    
+
     @field_validator("output")
     def validate_output_grid(cls, value: list[list[int]]) -> list[list[int]]:
         if not value:
@@ -167,7 +99,6 @@ class GridPair(BaseModel):
                 if not isinstance(color, int) or color < 0:
                     raise ValueError("All colors in the output grid must be non-negative integers.")
         return value
-    
 
 
 class Task(BaseModel):
@@ -178,7 +109,7 @@ class Task(BaseModel):
     rules: list[str] = []
 
 
-class Object(BaseModel):
+class Pixel(BaseModel):
     color: int
     x: float
     y: float
@@ -186,24 +117,5 @@ class Object(BaseModel):
     height: float
 
     def get_color(self) -> str:
-        match self.color:
-            case 1:
-                return "blue"
-            case 2:
-                return "red"
-            case 3:
-                return "green"
-            case 4:
-                return "yellow"
-            case 5:
-                return "grey"
-            case 6:
-                return "fuschia"
-            case 7:
-                return "orange"
-            case 8:
-                return "teal"
-            case 9:
-                return "brown"
-            case _:
-                return "unknown"
+        color = ARC_COLOR_TO_COLOR.get(self.color)
+        return "unknown" if color is None else color.value
