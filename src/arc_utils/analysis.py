@@ -148,13 +148,14 @@ def filter_max_output_pixels_per_color(tasks: list[Task], max_pixels: int) -> li
     return filtered_tasks
 
 
-def sort_by_amount_of_output_pixels(tasks: list[Task]) -> list[Task]:
+def sort_by_amount_of_output_pixels(tasks: list[Task], reverse: bool = False) -> list[Task]:
     """
-    Sorts tasks by the total number of non-zero pixels in their output grids.
+    Sorts tasks by the total number of non-zero pixels in their output grids in ascending order by default.
     """
     return sorted(
         tasks,
         key=lambda task: max(non_zero_pixel_count(pair.output) for pair in task.train + task.test),
+        reverse=reverse,
     )
 
 
