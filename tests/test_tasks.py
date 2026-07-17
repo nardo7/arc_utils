@@ -6,6 +6,7 @@ from arc_utils import (
     get_tasks_outputs_with_max_colors,
     load_task,
     load_tasks,
+    max_pixel_count_for_any_color,
     sort_key_by_max_pair_area,
     task_path,
 )
@@ -40,6 +41,13 @@ def test_different_output_pixels_detects_new_or_changed_pixels() -> None:
     pair = GridPair(input=[[0, 1], [0, 0]], output=[[0, 2], [3, 0]])
 
     assert get_different_output_pixels(pair) == [(0, 1, 1, 2), (1, 0, 0, 3)]
+
+
+def test_max_pixel_count_for_any_color_counts_largest_non_zero_color_group() -> None:
+    grid = [[0, 1, 1], [2, 2, 2], [3, 0, 1]]
+
+    assert max_pixel_count_for_any_color(grid) == 3
+    assert max_pixel_count_for_any_color([[0, 0]]) == 0
 
 
 def test_notebook_filters_can_select_tasks() -> None:

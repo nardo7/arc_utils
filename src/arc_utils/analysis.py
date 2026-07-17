@@ -23,6 +23,16 @@ def non_zero_pixel_count(grid: list[list[int]]) -> int:
     return sum(1 for row in grid for color in row if color != 0)
 
 
+def max_pixel_count_for_any_color(grid: list[list[int]]) -> int:
+    color_counts: dict[int, int] = {}
+    for row in grid:
+        for color in row:
+            if color != 0:
+                color_counts[color] = color_counts.get(color, 0) + 1
+
+    return max(color_counts.values(), default=0)
+
+
 def get_non_zero_pixels(grid: list[list[int]]) -> dict[tuple[int, int], int]:
     pixels: dict[tuple[int, int], int] = {}
     for row_index, row in enumerate(grid):
