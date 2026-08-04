@@ -34,6 +34,9 @@ ARC_COLOR_TO_COLOR = {
 }
 """Mapping from ARC's integer colour IDs to their canonical colours."""
 
+COLOR_TO_ARC_COLOR = {v: k for k, v in ARC_COLOR_TO_COLOR.items()}
+"""Mapping from ARC's integer colour IDs to their canonical colours."""
+
 
 def _srgb_channel_to_linear(channel: int) -> float:
     """Convert one 8-bit sRGB channel to a linear RGB value."""

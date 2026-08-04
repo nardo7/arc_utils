@@ -10,7 +10,7 @@ from .analysis import (
     sort_by_amount_of_output_pixels,
 )
 from .models import GridPair, Task, Pixel
-from .colors import ARC_COLOR_TO_COLOR, COLOR_RGB, DEFAULT_COLORS, Colors
+from .colors import ARC_COLOR_TO_COLOR, COLOR_RGB, DEFAULT_COLORS, Colors, COLOR_TO_ARC_COLOR
 from .tasks import available_task_ids, load_task, load_task_from_path, load_tasks, task_path
 
 __all__ = [
@@ -35,4 +35,5 @@ __all__ = [
     "COLOR_RGB",
     "DEFAULT_COLORS",
     "Colors",
+    "COLOR_TO_ARC_COLOR",
 ]

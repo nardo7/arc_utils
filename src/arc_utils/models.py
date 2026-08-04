@@ -74,6 +74,22 @@ class GridPair(BaseModel):
 
         return objects
 
+    def to_grid_coordinates(
+        self,
+        x: float,
+        y: float,
+        object_size: float,
+        min_separation: float,
+        grid: str = "input",
+    ) -> tuple[int, int]:
+        """Convert centered continuous coordinates back to an ARC grid row and column."""
+        grid_data = self.input if grid == "input" else self.output
+        row_count, col_count = len(grid_data), len(grid_data[0])
+        step = object_size + min_separation
+        min_x = -(row_count * object_size + (row_count - 1) * min_separation) / 2
+        min_y = -(col_count * object_size + (col_count - 1) * min_separation) / 2
+        return round((x - min_x) / step), round((y - min_y) / step)
+
     @field_validator("input")
     def validate_input_grid(cls, value: list[list[int]]) -> list[list[int]]:
         if not value:
