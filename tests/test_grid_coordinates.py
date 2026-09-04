@@ -42,7 +42,9 @@ def test_to_continuous_coordinates_can_use_output_grid() -> None:
         (8, -0.5, 0.5),
     ]
 
-    assert pair.to_grid_coordinates(objects[1].x, objects[1].y, 1.0, 1.0, grid="output") == (0, 1)
+    assert pair.to_grid_coordinates(
+        objects[1].x, objects[1].y, 1.0, 1.0, grid="output"
+    ) == (0, 1)
 
 
 def test_to_continuous_coordinates_handles_1x1_grid() -> None:

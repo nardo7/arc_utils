@@ -52,7 +52,11 @@ def _srgb_hex_to_linear_rgb(hex_color: str) -> tuple[float, float, float]:
     if len(hex_color) != 6:
         raise ValueError(f"Expected a six-digit hex colour, got {hex_color!r}")
 
-    channels = (int(hex_color[0:2], 16), int(hex_color[2:4], 16), int(hex_color[4:6], 16))
+    channels = (
+        int(hex_color[0:2], 16),
+        int(hex_color[2:4], 16),
+        int(hex_color[4:6], 16),
+    )
     return tuple(_srgb_channel_to_linear(channel) for channel in channels)
 
 

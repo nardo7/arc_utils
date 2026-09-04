@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from enum import Enum
 
 from pydantic import BaseModel, field_validator
@@ -19,7 +20,12 @@ class GridPair(BaseModel):
         def format_grid(grid: list[list[int]]) -> str:
             return "\n".join(" ".join(str(cell) for cell in row) for row in grid)
 
-        return "GridPair(\n" f"input:\n{format_grid(self.input)}\n" f"output:\n{format_grid(self.output)}\n" ")"
+        return (
+            "GridPair(\n"
+            f"input:\n{format_grid(self.input)}\n"
+            f"output:\n{format_grid(self.output)}\n"
+            ")"
+        )
 
     def to_continuous_coordinates(
         self,
@@ -97,10 +103,14 @@ class GridPair(BaseModel):
         row_length = len(value[0])
         for row in value:
             if len(row) != row_length:
-                raise ValueError("All rows in the input grid must have the same length.")
+                raise ValueError(
+                    "All rows in the input grid must have the same length."
+                )
             for color in row:
                 if not isinstance(color, int) or color < 0:
-                    raise ValueError("All colors in the input grid must be non-negative integers.")
+                    raise ValueError(
+                        "All colors in the input grid must be non-negative integers."
+                    )
         return value
 
     @field_validator("output")
@@ -110,10 +120,14 @@ class GridPair(BaseModel):
         row_length = len(value[0])
         for row in value:
             if len(row) != row_length:
-                raise ValueError("All rows in the output grid must have the same length.")
+                raise ValueError(
+                    "All rows in the output grid must have the same length."
+                )
             for color in row:
                 if not isinstance(color, int) or color < 0:
-                    raise ValueError("All colors in the output grid must be non-negative integers.")
+                    raise ValueError(
+                        "All colors in the output grid must be non-negative integers."
+                    )
         return value
 
 

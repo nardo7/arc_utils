@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from arc_utils.models import Task
-from arc_utils.models import Split
+
+from arc_utils.models import Split, Task
 
 
 def _normalize_split(split: Split | str) -> Split:
@@ -13,7 +13,9 @@ def _normalize_split(split: Split | str) -> Split:
         return Split(split)
     except ValueError as error:
         allowed = ", ".join(member.value for member in Split)
-        raise ValueError(f"Invalid split '{split}'. Expected one of: {allowed}.") from error
+        raise ValueError(
+            f"Invalid split '{split}'. Expected one of: {allowed}."
+        ) from error
 
 
 def package_root() -> Path:
@@ -55,11 +57,15 @@ def load_task(task_id: str, split: Split | str = Split.TRAIN) -> Task:
     split = _normalize_split(split)
     path = task_path(task_id=task_id, split=split)
     if not path.exists():
-        raise FileNotFoundError(f"Task '{task_id}' not found in split '{split}': {path}")
+        raise FileNotFoundError(
+            f"Task '{task_id}' not found in split '{split}': {path}"
+        )
 
     return load_task_from_path(path, split=split)
 
 
 def load_tasks(split: Split | str = Split.TRAIN) -> list[Task]:
     split = _normalize_split(split)
-    return [load_task(task_id, split=split) for task_id in available_task_ids(split=split)]
+    return [
+        load_task(task_id, split=split) for task_id in available_task_ids(split=split)
+    ]
